@@ -70,13 +70,13 @@ let
     rev = "replace_with_your_commit";
   };
 
-  name = "your_project";
+  pname = "your_project";
   version = "0.0.1";
-
   mixEnv = "prod";
 
   mixDeps = packages.fetchMixDeps {
-    inherit src name mixEnv version;
+    pname = "mix-deps-${pname}";
+    inherit src mixEnv version;
     # nix will complain and tell you the right value to replace this with
     sha256 = lib.fakeSha256;
     # if you have build time environment variable add them here
@@ -87,11 +87,11 @@ let
     (pkgs.callPackage ./assets/default.nix { }).shell.nodeDependencies;
 
   frontEndFiles = stdenvNoCC.mkDerivation {
-    name = "frontend-${name}-${version}";
+    pname = "frontend-${name}";
 
     nativeBuildInputs = [ nodejs ];
 
-    inherit src;
+    inherit version src;
 
     buildPhase = ''
       cp -r ./assets $TEMPDIR
@@ -119,7 +119,7 @@ let
 
 
 in packages.buildMix {
-  inherit src name version mixEnv mixDeps;
+  inherit src pname version mixEnv mixDeps;
   # if you have build time environment variable add them here
   MY_ENV_VAR="my_value";
   preInstall = ''
