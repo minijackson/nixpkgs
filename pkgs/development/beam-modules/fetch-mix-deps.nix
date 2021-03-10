@@ -18,6 +18,7 @@ stdenvNoCC.mkDerivation (attrs // {
   MIX_ENV = mixEnv;
   MIX_DEBUG = if debug then 1 else 0;
   DEBUG = if debug then 1 else 0; # for rebar3
+  # the api with `mix local.rebar rebar path` makes a copy of the binary
   MIX_REBAR = "${rebar}/bin/rebar";
   MIX_REBAR3 = "${rebar3}/bin/rebar3";
   # there is a persistent download failure with absinthe 1.6.3
@@ -31,7 +32,6 @@ stdenvNoCC.mkDerivation (attrs // {
     export MIX_DEPS_PATH="$TEMPDIR/deps";
 
     # Rebar
-    # the api with `mix local.rebar rebar path` makes a copy of the binary
     export REBAR_GLOBAL_CONFIG_DIR="$TMPDIR/rebar3"
     export REBAR_CACHE_DIR="$TMPDIR/rebar3.cache"
   '';
@@ -40,7 +40,7 @@ stdenvNoCC.mkDerivation (attrs // {
 
   installPhase = ''
     mix deps.get --only ${mixEnv}
-    find $TEMPDIR/deps -type d -name ".git" -print0 | xargs -0 -I {} rm -rf "{}"
+    find "$TEMPDIR/deps" -path '*/.git/*' -a ! -name HEAD -exec rm -rf {} +
     cp -r --no-preserve=mode,ownership,timestamps $TEMPDIR/deps $out
   '';
 

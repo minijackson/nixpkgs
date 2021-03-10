@@ -71,7 +71,7 @@ stdenv.mkDerivation (overridable // {
   installPhase = attrs.installPhase or ''
     runHook preInstall
 
-    mix release --path "$out"
+    mix release --no-deps-check --path "$out"
 
     runHook postInstall
   '';
