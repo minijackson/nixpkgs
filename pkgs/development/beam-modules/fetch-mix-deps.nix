@@ -6,11 +6,11 @@
 , src
 , mixEnv ? "prod"
 , debug ? false
-, buildEnvVars ? { }
 , meta ? { }
-}:
+, ...
+}@attrs:
 
-stdenvNoCC.mkDerivation (buildEnvVars // {
+stdenvNoCC.mkDerivation (attrs // {
   name = "mix-deps-${name}-${version}";
 
   nativeBuildInputs = [ elixir hex cacert git ];

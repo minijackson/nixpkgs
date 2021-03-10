@@ -120,8 +120,6 @@ let
 
 in packages.buildMix {
   inherit src name version mixEnv mixDeps;
-  # nix will complain and tell you the right value to replace this with
-  depsSha256 = lib.fakeSha256;
   # if you have build time environment variable add them here
   MY_ENV_VAR="my_value";
   preInstall = ''
