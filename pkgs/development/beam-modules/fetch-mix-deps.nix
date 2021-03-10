@@ -20,6 +20,8 @@ stdenvNoCC.mkDerivation (attrs // {
   DEBUG = if debug then 1 else 0; # for rebar3
   MIX_REBAR = "${rebar}/bin/rebar";
   MIX_REBAR3 = "${rebar3}/bin/rebar3";
+  # there is a persistent download failure with absinthe 1.6.3
+  # those defaults reduce the failure rate
   HEX_HTTP_CONCURRENCY = 1;
   HEX_HTTP_TIMEOUT = 120;
 
