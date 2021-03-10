@@ -1,6 +1,6 @@
 { stdenv, lib, elixir, erlang, hex, rebar, rebar3, fetchMixDeps, makeWrapper, git }:
 
-{ name
+{ pname
 , version
 , src
 , nativeBuildInputs ? [ ]
@@ -17,12 +17,9 @@ let
 
 in
 stdenv.mkDerivation (overridable // {
-  name = "${name}-${version}";
-  inherit version;
-
   dontStrip = true;
 
-  inherit src;
+  inherit pname version src;
 
   nativeBuildInputs = nativeBuildInputs ++ [ erlang hex elixir makeWrapper git ];
 
@@ -81,7 +78,7 @@ stdenv.mkDerivation (overridable // {
 
   postFixup =
     if defaultEnvVars then ''
-      wrapProgram $out/bin/${name} \
+      wrapProgram $out/bin/${pname} \
         --set-default RELEASE_TMP "/tmp"
     '' else "";
   # TODO figure out how to do a Fixed Output Derivation and add the output hash

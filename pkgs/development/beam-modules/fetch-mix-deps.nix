@@ -1,6 +1,6 @@
 { stdenvNoCC, lib, elixir, hex, rebar, rebar3, cacert, git }:
 
-{ name
+{ pname
 , version
 , sha256
 , src
@@ -11,17 +11,17 @@
 }@attrs:
 
 stdenvNoCC.mkDerivation (attrs // {
-  name = "mix-deps-${name}-${version}";
-
   nativeBuildInputs = [ elixir hex cacert git ];
 
-  inherit src;
+  inherit pname version src;
 
   MIX_ENV = mixEnv;
   MIX_DEBUG = if debug then 1 else 0;
   DEBUG = if debug then 1 else 0; # for rebar3
   MIX_REBAR = "${rebar}/bin/rebar";
   MIX_REBAR3 = "${rebar3}/bin/rebar3";
+  HEX_HTTP_CONCURRENCY = 1;
+  HEX_HTTP_TIMEOUT = 120;
 
   configurePhase = ''
     export HEX_HOME="$TEMPDIR/.hex";
