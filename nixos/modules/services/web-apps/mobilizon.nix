@@ -34,7 +34,6 @@ let
     '';
 
     postFixup = ''
-      echo "Hello"
       wrapProgram $out/bin/mobilizon --run '. ${secretEnvFile}'
       wrapProgram $out/bin/mobilizon_ctl --run '. ${secretEnvFile}'
     '';
@@ -237,8 +236,6 @@ in
         ExecStartPre = "${package}/bin/mobilizon_ctl migrate";
         ExecStart = "${package}/bin/mobilizon start";
         ExecStop = "${package}/bin/mobilizon stop";
-
-        #EnvironmentFile = [ secretEnvFile ];
 
         User = user;
         Group = group;
