@@ -2576,6 +2576,10 @@ in
 
   mlarchive2maildir = callPackage ../applications/networking/mailreaders/mlarchive2maildir { };
 
+  mobilizon = callPackage ../servers/mobilizon {
+    inherit (beam.packages.erlang) buildMix fetchMixDeps;
+  };
+
   molly-brown = callPackage ../servers/gemini/molly-brown { };
 
   monetdb = callPackage ../servers/sql/monetdb { };
