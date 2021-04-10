@@ -10,11 +10,12 @@ let
 
   settingsFormat = pkgs.formats.elixirConf { };
 
-  runtimeConfig = settingsFormat.generate "mobilizon-runtime.exs" cfg.settings;
+  configFile = settingsFormat.generate "mobilizon-config.exs" cfg.settings;
 
-  # TODO: make this a globally available function
-  package = pkgs.stdenv.mkDerivation rec {
-    pname = "${cfg.package.pname}-with-config";
+  # Make a package with the correct envirenment, instead of setting it systemd
+  # services, so that the user can also use them without troubles
+  launchers = pkgs.stdenv.mkDerivation rec {
+    pname = "${cfg.package.pname}-launchers";
     inherit (cfg.package) version;
 
     src = cfg.package;
@@ -24,27 +25,26 @@ let
     dontBuild = true;
 
     installPhase = ''
-      mkdir $out
-      cp -a . $out/
-      cp ${runtimeConfig} $out/releases/${version}/runtime.exs
-      # TODO: in buildMix, probably
-      rm $out/releases/COOKIE
-      # TODO: in buildMix, probably
-      rm $out/bin/${cfg.package.pname}.bat
-    '';
+      mkdir -p $out/bin
 
-    postFixup = ''
-      wrapProgram $out/bin/mobilizon --run '. ${secretEnvFile}'
-      wrapProgram $out/bin/mobilizon_ctl --run '. ${secretEnvFile}'
+      makeWrapper \
+        $src/bin/mobilizon \
+        $out/bin/mobilizon \
+        --run '. ${secretEnvFile}' \
+        --set MOBILIZON_CONFIG_PATH "${configFile}"
+
+      makeWrapper \
+        $src/bin/mobilizon_ctl \
+        $out/bin/mobilizon_ctl \
+        --run '. ${secretEnvFile}' \
+        --set MOBILIZON_CONFIG_PATH "${configFile}"
     '';
   };
 
   repoSettings = cfg.settings.":mobilizon"."Mobilizon.Storage.Repo";
   instanceSettings = cfg.settings.":mobilizon".":instance";
 
-  isLocalPostgres =
-    repoSettings.adapter.value == "Ecto.Adapters.Postgres" &&
-    repoSettings.socket_dir != null;
+  isLocalPostgres = repoSettings.socket_dir != null;
 
   dbuser =
     if repoSettings.username != null then repoSettings.username else "mobilizon";
@@ -69,130 +69,106 @@ in
       };
 
       settings = mkOption {
-        type = types.submodule {
-          freeformType = settingsFormat.type;
+        type =
+          let
+            elixirTypes = settingsFormat.lib.types;
+          in
+          types.submodule {
+            freeformType = settingsFormat.type;
 
-          options = {
-            ":mobilizon" = {
+            options = {
+              ":mobilizon" = {
 
-              "Mobilizon.Web.Endpoint" = {
-                url.host = mkOption {
-                  type = types.str; # todo "elixirOr str" to allow raw elixir values
-                  defaultText = ''
-                    ":mobilizon".":instance".hostname
-                  '';
-                  description = ''
-                    Domain of the instance
-                  '';
+                "Mobilizon.Web.Endpoint" = {
+                  url.host = mkOption {
+                    type = elixirTypes.str;
+                    defaultText =
+                      literalExample ''''${settings.":mobilizon".":instance".hostname}'';
+                    description = ''
+                      Domain of the instance
+                    '';
+                  };
+
+                  http.port = mkOption {
+                    type = elixirTypes.port;
+                    default = 4000;
+                    description = ''
+                      The port the app listens to
+                    '';
+                  };
                 };
 
-                http.port = mkOption {
-                  type = types.port;
-                  default = 4000;
-                  description = ''
-                    The port the app listens to
-                  '';
+                ":instance" = {
+                  name = mkOption {
+                    type = elixirTypes.str;
+                    description = ''
+                      Name of the instance
+                    '';
+                  };
+
+                  hostname = mkOption {
+                    type = elixirTypes.str;
+                    description = ''
+                      Domain of the instance
+                    '';
+                  };
+
+                  email_from = mkOption {
+                    type = elixirTypes.str;
+                    defaultText = literalExample ''noreply@''${settings.":mobilizon".":instance".hostname}'';
+                    description = ''
+                      The address emails will be send with
+                    '';
+                  };
+
+                  email_reply_to = mkOption {
+                    type = elixirTypes.str;
+                    defaultText = literalExample "\${email_from}";
+                    description = ''
+                      Reply-To for sent emails
+                    '';
+                  };
                 };
 
-                secret_key_base = mkOption {
-                  internal = true;
-                  default = settingsFormat.lib.mkGetEnv
-                    { envVariable = "MOBILIZON_INSTANCE_SECRET"; };
-                  description = ''
-                    Secret for this instance.
+                "Mobilizon.Storage.Repo" = {
+                  socket_dir = mkOption {
+                    type = types.nullOr elixirTypes.str;
+                    default = postgresqlSocketDir;
+                    description = ''
+                      Path to the postgres socket directory.
 
-                    Will be automatically generated at first boot (TODO).
-                  '';
-                };
-              };
+                      Set this to null if you want to connect to a remote database.
 
-              "Mobilizon.Web.Auth.Guardian" = {
-                secret_key = mkOption {
-                  internal = true;
-                  default = settingsFormat.lib.mkGetEnv
-                    { envVariable = "MOBILIZON_AUTH_SECRET"; };
-                  description = ''
-                    Secret for this instance's authontication.
+                      If non-null, the local PostgreSQL server will be configured with
+                      the configured database, permissions, and required extensions.
 
-                    Will be automatically generated at first boot (TODO).
-                  '';
-                };
-              };
+                      If connecting to a remote database, please follow the
+                      instructions on how to setup your database:
+                      <link xlink:href="https://docs.joinmobilizon.org/administration/install/release/#database-setup"/>
+                    '';
+                  };
 
-              ":instance" = {
-                name = mkOption {
-                  type = types.str;
-                  description = ''
-                    Name of the instance
-                  '';
-                };
+                  username = mkOption {
+                    type = types.nullOr elixirTypes.str;
+                    default = user;
+                    description = ''
+                      User used to connect to the database
+                    '';
+                  };
 
-                hostname = mkOption {
-                  type = types.str;
-                  description = ''
-                    Domain of the instance
-                  '';
-                };
+                  database = mkOption {
+                    type = types.nullOr elixirTypes.str;
+                    default = "mobilizon_prod";
+                    description = ''
+                      Name of the database
+                    '';
+                  };
 
-                email_from = mkOption {
-                  type = types.str;
-                  defaultText = "noreply@\${hostname}";
-                  description = ''
-                    The address emails will be send with
-                  '';
-                };
-
-                email_reply_to = mkOption {
-                  type = types.str;
-                  defaultText = "\${email_from}";
-                  description = ''
-                    Reply-To for sent emails
-                  '';
-                };
-              };
-
-              "Mobilizon.Storage.Repo" = {
-                adapter = mkOption {
-                  type = with types; attrsOf str;
-                  # TODO: seems mandatory because of postgres extensions
-                  default = settingsFormat.lib.mkAtom "Ecto.Adapters.Postgres";
-                  description = ''
-                    TODO
-                    This will be used
-                  '';
-                };
-
-                socket_dir = mkOption {
-                  type = with types; nullOr str;
-                  default = postgresqlSocketDir;
-                  description = ''
-                    Path to the postgres socket directory.
-
-                    Set this to null if you want to connect to a remote database.
-                  '';
-                };
-
-                username = mkOption {
-                  type = with types; nullOr str;
-                  default = user;
-                  description = ''
-                    User used to connect to the database
-                  '';
-                };
-
-                database = mkOption {
-                  type = types.str;
-                  default = "mobilizon_prod";
-                  description = ''
-                    User used to connect to the database
-                  '';
                 };
 
               };
-
             };
           };
-        };
         default = { };
 
         description = ''
@@ -210,14 +186,23 @@ in
         "Mobilizon.Web.Endpoint" = {
           server = true;
           url.host = mkDefault instanceSettings.hostname;
+          secret_key_base =
+            settingsFormat.lib.mkGetEnv { envVariable = "MOBILIZON_INSTANCE_SECRET"; };
         };
+
+        "Mobilizon.Web.Auth.Guardian".secret_key =
+          settingsFormat.lib.mkGetEnv { envVariable = "MOBILIZON_AUTH_SECRET"; };
+
         ":instance" = {
           registrations_open = mkDefault false;
           demo = mkDefault false;
           email_from = mkDefault "noreply@${instanceSettings.hostname}";
           email_reply_to = mkDefault instanceSettings.email_from;
         };
+
         "Mobilizon.Storage.Repo" = {
+          # Forced by upstream since it uses PostgreSQL-specific extensions
+          adapter = settingsFormat.lib.mkAtom "Ecto.Adapters.Postgres";
           pool_size = mkDefault 10;
         };
       };
@@ -233,9 +218,10 @@ in
       wantedBy = [ "multi-user.target" ];
 
       serviceConfig = {
-        ExecStartPre = "${package}/bin/mobilizon_ctl migrate";
-        ExecStart = "${package}/bin/mobilizon start";
-        ExecStop = "${package}/bin/mobilizon stop";
+        ExecStartPre = "${launchers}/bin/mobilizon_ctl migrate";
+        ExecStart = "${launchers}/bin/mobilizon start";
+        # TODO: Is this correct?
+        ExecStop = "${launchers}/bin/mobilizon stop";
 
         User = user;
         Group = group;
@@ -251,6 +237,7 @@ in
 
       environment = {
         RELEASE_TMP = "/tmp";
+        MOBILIZON_CONFIG_PATH = configFile;
       };
     };
 
@@ -272,7 +259,7 @@ in
           # https://github.com/elixir-lang/elixir/blob/v1.11.3/lib/mix/lib/mix/release.ex#L499
           genCookie = "IO.puts(Base.encode32(:crypto.strong_rand_bytes(32)))";
 
-          evalElixir = "${package}/bin/mobilizon eval";
+          evalElixir = "${launchers}/bin/mobilizon eval";
         in
         ''
           set -euxo pipefail
@@ -342,6 +329,6 @@ in
     users.groups.${group} = { };
 
     # So that we have the `mobilizon` and `mobilizon_ctl` commands
-    environment.systemPackages = [ package ];
+    environment.systemPackages = [ launchers ];
   };
 }

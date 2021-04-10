@@ -12,21 +12,21 @@ let
   js = callPackage ./js.nix {};
 in buildMix rec {
   pname = "mobilizon";
-  version = "1.0.7";
+  version = "1.1.0";
 
   src = fetchFromGitLab {
     domain = "framagit.org";
     owner = "framasoft";
     repo = "mobilizon";
-    rev = "1.0.7";
-    sha256 = "1y7q19svv99cy8j2xylx6rilbfmqh1bpjjfq2q3cwj0a3zrjgpya";
+    rev = version;
+    sha256 = "1cmqpakjlafsnbk6c1vb6xzi5d2gwfihqxavbznjljk88wr2p4hr";
   };
 
   nativeBuildInputs = [ git cmake gnumake ];
 
   mixDeps = fetchMixDeps {
     inherit src pname version;
-    sha256 = "0w4imdj3gylvvci7yd767v1h5cnih09j1ac2zvgpmjz48ih6afr7";
+    sha256 = "0cxpibgm9lfymicprpxa3d5i32lpwkgg107913bvyg53lajfbwpc";
   };
 
   preBuild = ''

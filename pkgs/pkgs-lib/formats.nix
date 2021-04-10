@@ -14,6 +14,10 @@ rec {
       # The description needs to be overwritten for recursive types
       type = ...;
 
+      # Utility functions for convenience, or special interactions with the
+      # format
+      lib = { ... };
+
       # generate :: Name -> Value -> Path
       # A function for generating a file with a value of such a type
       generate = ...;
@@ -107,6 +111,31 @@ rec {
 
   };
 
+  /* For configurations of Mix project, like config.exs or runtime.exs
+
+    Since Elixir has more types than Nix, we need a way to map Nix types to
+    more than 1 Elixir type. To that end, this format provides its own library,
+    and its own set of types.
+
+    To be more detailed, a Nix attribute set could correspond in Elixir to a
+    [Keyword list] (the more common type), or it could correspond to a [Map].
+
+    A Nix string, could correspond to in Elixir to a [String] (also called
+    "binary"), an [Atom], or a list of chars (usually discouraged).
+
+    Some more types exists, like records, regexes, but since they are less used,
+    we can leave the `mkRaw` function as an escape hatch.
+
+    For more information on how to use this format in modules, please refer to
+    the beam section of the Nixpkgs documentation.
+
+    TODO: special Elixir values doesn't show up nicely in the documentation
+
+    [Keyword list]: <https://hexdocs.pm/elixir/Keyword.html>
+    [Map]: <https://hexdocs.pm/elixir/Map.html>
+    [String]: <https://hexdocs.pm/elixir/String.html>
+    [Atom]: <https://hexdocs.pm/elixir/Atom.html>
+  */
   elixirConf = { elixir ? pkgs.elixir }:
     with lib; let
       toElixir = value: with builtins;
@@ -144,7 +173,7 @@ rec {
 
       elixirMap = set:
         let
-          toEntry = { name, value }: "${toElixir name} => ${toElixir value}";
+          toEntry = name: value: "${toElixir name} => ${toElixir value}";
           entries = concatStringsSep ", " (mapAttrsToList toEntry set);
         in
         "%{" + entries + "}";
@@ -187,34 +216,87 @@ rec {
             _elixirType = "raw";
           };
 
-          mkGetEnv = { envVariable, fallback ? null }:
-            mkRaw "System.get_env(${toElixir envVariable}, ${toElixir fallback})";
         in
         {
-          inherit mkRaw mkGetEnv;
+          inherit mkRaw;
 
+          /* Fetch an environment variable at runtime, with optional fallback
+          */
+          mkGetEnv = { envVariable, fallback ? null }:
+            mkRaw "System.get_env(${toElixir envVariable}, ${toElixir fallback})";
+
+          /* Make an Elixir atom.
+
+            Note: lowercase atoms still need to be prefixed by ':'
+          */
           mkAtom = value: {
             inherit value;
             _elixirType = "atom";
           };
 
+          /* Make an Elixir atom.
+
+            Note: lowercase atoms still need to be prefixed by ':'
+          */
           mkTuple = value: {
             inherit value;
             _elixirType = "tuple";
           };
 
+          /* Make an Elixir map out of an attribute set.
+          */
           mkMap = value: {
             inherit value;
             _elixirType = "map";
           };
 
+          /* Contains Elixir types. Every type it exports can also be replaced
+             by raw Elixir code (i.e. every type is `either type rawElixir`).
+
+             It also reexports standard types, wrapping them so that they can
+             also be raw Elixir.
+          */
+          types = with lib.types; let
+            isElixirType = type: x: (x._elixirType or "") == type;
+
+            rawElixir = mkOptionType {
+              name = "rawElixir";
+              description = "raw elixir";
+              check = isElixirType "raw";
+            };
+
+            elixirOr = other: either other rawElixir;
+          in
+          {
+            inherit rawElixir elixirOr;
+
+            atom = elixirOr (mkOptionType {
+              name = "elixirAtom";
+              description = "elixir atom";
+              check = isElixirType "atom";
+            });
+
+            tuple = elixirOr (mkOptionType {
+              name = "elixirTuple";
+              description = "elixir tuple";
+              check = isElixirType "tuple";
+            });
+
+            map = elixirOr (mkOptionType {
+              name = "elixirMap";
+              description = "elixir map";
+              check = isElixirType "map";
+            });
+            # Wrap standard types, since anything in the Elixir configuration
+            # can be raw Elixir
+          } // lib.mapAttrs (_name: type: elixirOr type) lib.types;
         };
 
       generate = name: value: pkgs.runCommandNoCC name
         {
           value = toConf value;
           passAsFile = [ "value" ];
-          nativeBuildInputs = [ elixir pkgs.glibc.bin ];
+          nativeBuildInputs = [ elixir ];
         } ''
         cp "$valuePath" "$out"
         mix format "$out"

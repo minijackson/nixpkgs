@@ -4,13 +4,27 @@
   fileSystems."/".label = "vmdisk";
   networking.hostName = "vmHost";
 
-  services.mobilizon = {
+  services.mobilizon = with (pkgs.formats.elixirConf { }).lib; {
     enable = true;
     settings = {
       ":mobilizon" = {
         ":instance" = {
           name = "Test Mobilizon";
-          hostname = "mobilizon.org";
+          hostname = "localhost";
+        };
+
+        "Mobilizon.Service.ResourceProviders" = {
+          types = {
+            pad = mkAtom ":etherpad";
+            calc = mkAtom ":ethercalc";
+            visio = mkAtom ":jitsi";
+          };
+
+          providers = mkMap {
+            "etherpad" = "https://etherpad.wikimedia.org/p/";
+            "ethercalc" = "https://ethercalc.net/";
+            "jitsi" = "https://meet.jit.si/";
+          };
         };
       };
     };
