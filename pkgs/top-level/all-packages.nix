@@ -19640,6 +19640,8 @@ in
 
   mbtileserver = callPackage ../servers/mbtileserver { };
 
+  mediagoblin = callPackage ../servers/mediagoblin { };
+
   mediatomb = callPackage ../servers/mediatomb { };
 
   memcached = callPackage ../servers/memcached {};

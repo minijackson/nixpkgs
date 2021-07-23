@@ -5135,6 +5135,8 @@ in {
 
   pastel = callPackage ../development/python-modules/pastel { };
 
+  pasteScript = callPackage ../development/python-modules/pastescript { };
+
   patator = callPackage ../development/python-modules/patator { };
 
   patch = callPackage ../development/python-modules/patch { };
@@ -5668,6 +5670,8 @@ in {
   py-air-control = callPackage ../development/python-modules/py-air-control { };
 
   py-air-control-exporter = callPackage ../development/python-modules/py-air-control-exporter { };
+
+  py-bcrypt = callPackage ../development/python-modules/py-bcrypt { };
 
   py-dmidecode = callPackage ../development/python-modules/py-dmidecode { };
 

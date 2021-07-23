@@ -1,0 +1,86 @@
+diff --git a/mediagoblin/media_types/video/processing.py b/mediagoblin/media_types/video/processing.py
+index 466ab194..cadfab2e 100644
+--- a/mediagoblin/media_types/video/processing.py
++++ b/mediagoblin/media_types/video/processing.py
+@@ -20,7 +20,7 @@ import logging
+ import datetime
+ import celery
+ 
+-from celery import group
++from celery import group, app
+ from mediagoblin import mg_globals as mgg
+ from mediagoblin.processing import (
+     FilenameBuilder, BaseProcessingFail,
+@@ -173,7 +173,7 @@ def store_metadata(media_entry, metadata):
+         media_entry.media_data_init(orig_metadata=stored_metadata)
+ 
+ 
+-@celery.task()
++@app.task()
+ def main_task(entry_id, resolution, medium_size, **process_info):
+     """
+     Main celery task to transcode the video to the default resolution
+@@ -197,7 +197,7 @@ def main_task(entry_id, resolution, medium_size, **process_info):
+     _log.debug('MediaEntry processed')
+ 
+ 
+-@celery.task()
++@app.task()
+ def complementary_task(entry_id, resolution, medium_size, **process_info):
+     """
+     Side celery task to transcode the video to other resolutions
+@@ -213,7 +213,7 @@ def complementary_task(entry_id, resolution, medium_size, **process_info):
+         entry.id, medium_size))
+ 
+ 
+-@celery.task()
++@app.task()
+ def processing_cleanup(entry_id):
+     _log.debug('Entered processing_cleanup')
+     entry, manager = get_entry_and_processing_manager(entry_id)
+diff --git a/mediagoblin/notifications/task.py b/mediagoblin/notifications/task.py
+index 74d67569..3b7d7bc1 100644
+--- a/mediagoblin/notifications/task.py
++++ b/mediagoblin/notifications/task.py
+@@ -17,7 +17,7 @@
+ import logging
+ 
+ from celery import registry
+-from celery.task import Task
++from celery.app.task import Task
+ 
+ from mediagoblin.tools.mail import send_email
+ from mediagoblin.db.models import Notification
+diff --git a/mediagoblin/processing/task.py b/mediagoblin/processing/task.py
+index 9951c756..57287b7e 100644
+--- a/mediagoblin/processing/task.py
++++ b/mediagoblin/processing/task.py
+@@ -31,7 +31,7 @@ logging.basicConfig()
+ _log.setLevel(logging.DEBUG)
+ 
+ 
+-@celery.task(default_retry_delay=2 * 60)
++@app.task(default_retry_delay=2 * 60)
+ def handle_push_urls(feed_url):
+     """Subtask, notifying the PuSH servers of new content
+ 
+diff --git a/mediagoblin/submit/task.py b/mediagoblin/submit/task.py
+index 4ebde502..c5c43e85 100755
+--- a/mediagoblin/submit/task.py
++++ b/mediagoblin/submit/task.py
+@@ -14,13 +14,13 @@
+ # You should have received a copy of the GNU Affero General Public License
+ # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ 
+-import celery
++from celery import app
+ import datetime
+ import pytz
+ 
+ from mediagoblin.db.models import MediaEntry
+ 
+-@celery.task()
++@app.task()
+ def collect_garbage():
+     """
+         Garbage collection to clean up media
