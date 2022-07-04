@@ -2,6 +2,7 @@
 , monorepoSrc, runCommand
 , substituteAll, cmake, libxml2, libllvm, version, python3
 , buildLlvmTools
+, fetchpatch
 , fixDarwinDylibNames
 , enableManpages ? false
 }:
@@ -48,6 +49,10 @@ let
       (substituteAll {
         src = ../../clang-11-12-LLVMgold-path.patch;
         libllvmLibdir = "${libllvm.lib}/lib";
+      })
+      (fetchpatch {
+        url = "https://github.com/void-linux/void-packages/raw/cece714ffa801c656fc3e6727e08cbacfcae1bfa/srcpkgs/llvm12/patches/clang-004-ppc64-musl-elfv2.patch";
+        hash = "sha256-FHAa2GAiHyrl+BUT7qs1zx9kj0NgEjLY5Y/nZTkvUPQ=";
       })
     ];
 
