@@ -61,6 +61,11 @@ in stdenv.mkDerivation (rec {
 
   patches = [
     ./gnu-install-dirs.patch
+    (fetchpatch {
+      url = "https://github.com/void-linux/void-packages/raw/cece714ffa801c656fc3e6727e08cbacfcae1bfa/srcpkgs/llvm12/patches/llvm-002-musl-ppc64-elfv2.patch";
+      hash = "sha256-nNL6L4wKIieqUhIQ672O0C9e4C+DKTEId7TkVpuWPdU=";
+      stripLen = 1;
+    })
   ] ++ lib.optional enablePolly ./gnu-install-dirs-polly.patch;
 
   postPatch = optionalString stdenv.isDarwin ''
