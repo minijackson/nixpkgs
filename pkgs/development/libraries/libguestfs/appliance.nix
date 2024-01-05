@@ -26,6 +26,5 @@ stdenvNoCC.mkDerivation rec {
     homepage = "https://libguestfs.org";
     license = with licenses; [ gpl2Plus lgpl2Plus ];
     platforms = [ "i686-linux" "x86_64-linux" ];
-    hydraPlatforms = [ ]; # Hydra fails with "Output limit exceeded"
   };
 }
