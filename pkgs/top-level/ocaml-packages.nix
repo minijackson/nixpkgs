@@ -1215,6 +1215,8 @@ let
 
     ocaml_expat = callPackage ../development/ocaml-modules/expat { };
 
+    ocaml-augeas = callPackage ../development/ocaml-modules/ocaml-augeas { };
+
     ocaml-freestanding = callPackage ../development/ocaml-modules/ocaml-freestanding { };
 
     ocaml_gettext = callPackage ../development/ocaml-modules/ocaml-gettext { };

@@ -1,0 +1,12 @@
+diff --git a/daemon/Makefile.am b/daemon/Makefile.am
+index bb2e58d..6e42900 100644
+--- a/daemon/Makefile.am
++++ b/daemon/Makefile.am
+@@ -264,6 +264,7 @@ guestfsd_CFLAGS = \
+ 	$(SD_JOURNAL_CFLAGS) \
+ 	$(JANSSON_CFLAGS) \
+ 	$(PCRE2_CFLAGS) \
++	$(LIBXML2_CFLAGS) \
+ 	$(LIBRPM_CFLAGS)
+ 
+ # Parts of the daemon are written in OCaml.  These are linked into a

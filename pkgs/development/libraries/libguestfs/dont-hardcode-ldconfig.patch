@@ -1,0 +1,13 @@
+diff --git a/appliance/Makefile.am b/appliance/Makefile.am
+index 063c19f..5fbdcfc 100644
+--- a/appliance/Makefile.am
++++ b/appliance/Makefile.am
+@@ -95,7 +95,7 @@ endif !HAVE_RPM
+ 
+ # Automatically generate library dependency list
+ guestfsd.deps: ../daemon/guestfsd
+-	/sbin/ldconfig -p > ld.so.cache.txt
++	ldconfig -p > ld.so.cache.txt
+ 	objdump -p $^ |\
+ 		sed -ne '/NEEDED/{s/ *NEEDED *//; p;}' |\
+ 		xargs -i grep -F {} ld.so.cache.txt |\

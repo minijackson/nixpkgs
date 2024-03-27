@@ -12,6 +12,8 @@
 , flex
 , bison
 , qemu
+, rpm
+, supermin
 , pcre2
 , augeas
 , libxml2
@@ -35,10 +37,10 @@
 , perlPackages
 , ocamlPackages
 , libtirpc
-, libguestfs-appliance
 , javaSupport ? false
 , jdk
 , zstd
+, withAppliance ? true
 }:
 
 stdenv.mkDerivation rec {
@@ -62,6 +64,8 @@ stdenv.mkDerivation rec {
     makeWrapper
     pkg-config
     qemu
+    rpm
+    supermin
     zstd
   ] ++ (with perlPackages; [ perl libintl-perl GetoptLong ModuleBuild ])
   ++ (with ocamlPackages; [ ocaml findlib ]);
@@ -89,7 +93,7 @@ stdenv.mkDerivation rec {
     libapparmor
     perlPackages.ModuleBuild
     libtirpc
-  ] ++ (with ocamlPackages; [ ocamlbuild ocaml_libvirt gettext-stub ounit ])
+  ] ++ (with ocamlPackages; [ ocamlbuild ocaml-augeas ocaml_libvirt gettext-stub ounit ])
   ++ lib.optional javaSupport jdk;
 
   prePatch = ''
@@ -105,13 +109,20 @@ stdenv.mkDerivation rec {
     patchShebangs .
   '';
   configureFlags = [
-    "--disable-appliance"
-    "--disable-daemon"
+    # Use RedHat here, to tell the supermin to use rpm
     "--with-distro=NixOS"
+    "--disable-appliance"
     "--with-guestfs-path=${placeholder "out"}/lib/guestfs"
-  ] ++ lib.optionals (!javaSupport) [ "--without-java" ];
+  ] ++ lib.optionals (!javaSupport) [ "--without-java" ]
+  ++ (if withAppliance then [
+    "--enable-install-daemon"
+  ] else [
+    "--disable-daemon"
+  ]);
   patches = [
     ./libguestfs-syms.patch
+    ./dont-hardcode-ldconfig.patch
+    ./fix-libxml2-for-guestfsd.patch
   ];
 
   createFindlibDestdir = true;
@@ -128,13 +139,20 @@ stdenv.mkDerivation rec {
     done
   '';
 
-  postFixup = lib.optionalString (libguestfs-appliance != null) ''
-    mkdir -p $out/{lib,lib64}
-    ln -s ${libguestfs-appliance} $out/lib64/guestfs
-    ln -s ${libguestfs-appliance} $out/lib/guestfs
-  '';
+  # TODO: create an appliance with the kernel, initrd, and the "root" fs
+  # kernel -> figure it out
+  # initrd -> don't know whether we can easily build a simple one
+  # root fs -> might be able to use `(buildFHSUserEnv { ... }).fhsenv`
+  #   -> init script is in libguestfs-src/appliance/init
 
-  doInstallCheck = libguestfs-appliance != null;
+  # postFixup = lib.optionalString (libguestfs-appliance != null) ''
+  #   mkdir -p $out/{lib,lib64}
+  #   ln -s ${libguestfs-appliance} $out/lib64/guestfs
+  #   ln -s ${libguestfs-appliance} $out/lib/guestfs
+  # '';
+
+  # doInstallCheck = withAppliance;
+  doInstallCheck = false;
   installCheckPhase = ''
     runHook preInstallCheck
 
