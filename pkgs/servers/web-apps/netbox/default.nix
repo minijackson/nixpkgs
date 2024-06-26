@@ -3,8 +3,6 @@ let
   generic = import ./generic.nix;
 in
 lib.fix (self: {
-  netbox = self.netbox_3_7;
-
   netbox_3_6 = callPackage generic {
     version = "3.6.9";
     hash = "sha256-R/hcBKrylW3GnEy10DkrLVr8YJtsSCvCP9H9LhafO9I=";
@@ -34,5 +32,6 @@ lib.fix (self: {
     };
 
     maintainers = with lib.maintainers; [ minijackson n0emis raitobezarius ];
+    eol = true;
   };
 })
