@@ -18,12 +18,14 @@
 
       format = "other";
 
-      src = fetchFromGitHub {
-        owner = "netbox-community";
-        repo = pname;
-        rev = "refs/tags/v${version}";
-        inherit hash;
-      };
+      # src = fetchFromGitHub {
+      #   owner = "netbox-community";
+      #   repo = pname;
+      #   rev = "refs/tags/v${version}";
+      #   inherit hash;
+      # };
+
+      src = /home/minijackson/Documents/Dev/dev/github.com/netbox-community/netbox;
 
       patches = extraPatches;
 
@@ -35,6 +37,7 @@
         django-debug-toolbar
         django-filter
         django-graphiql-debug-toolbar
+        django-htmx
         django-mptt
         django-pglocks
         django-prometheus
@@ -55,6 +58,7 @@
         markdown
         markdown-include
         netaddr
+        nh3
         pillow
         psycopg2
         pyyaml
@@ -62,6 +66,7 @@
         sentry-sdk
         social-auth-core
         social-auth-app-django
+        strawberry-graphql-django
         svgwrite
         tablib
         jsonschema

@@ -24,6 +24,8 @@ in import ../make-test-python.nix ({ lib, pkgs, netbox, ... }: {
         abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789
       '';
 
+      settings.ALLOWED_HOSTS = ["netbox.localhost"];
+
       enableLdap = true;
       ldapConfigPath = pkgs.writeText "ldap_config.py" ''
         import ldap
@@ -132,7 +134,7 @@ in import ../make-test-python.nix ({ lib, pkgs, netbox, ... }: {
 
   testScript = let
     changePassword = pkgs.writeText "change-password.py" ''
-      from django.contrib.auth.models import User
+      from netbox.users.models import User
       u = User.objects.get(username='netbox')
       u.set_password('netbox')
       u.save()
