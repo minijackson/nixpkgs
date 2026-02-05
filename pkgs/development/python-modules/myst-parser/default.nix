@@ -1,6 +1,7 @@
 {
   lib,
   buildPythonPackage,
+  pythonOlder,
   fetchFromGitHub,
 
   # build-system
@@ -25,14 +26,16 @@
 }:
 buildPythonPackage (finalAttrs: {
   pname = "myst-parser";
-  version = "4.0.1";
+  version = "5.0.0";
   pyproject = true;
+
+  disabled = pythonOlder "3.11";
 
   src = fetchFromGitHub {
     owner = "executablebooks";
     repo = "myst-parser";
     tag = "v${finalAttrs.version}";
-    hash = "sha256-/Prauz4zuJY39EK2BmgBbH1uwjF4K38e5X5hPYwRBl0=";
+    hash = "sha256-0lGejdGVVvZar3sPBbvThXzJML7PcR5+shyDHTTtVEY=";
   };
 
   build-system = [ flit-core ];
